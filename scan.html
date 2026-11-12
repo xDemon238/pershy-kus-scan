@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Сканер карток · Перший Кусь</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #14254a);
+    --hint: var(--tg-theme-hint-color, #6b7280);
+    --accent: #e8531e;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { min-height: 100%; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px; text-align: center; }
+  .logo { width: 96px; height: 96px; border-radius: 50%; background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; line-height: 1.05; }
+  #status { font-size: 17px; max-width: 320px; }
+  button { appearance: none; border: 0; border-radius: 14px; background: var(--accent); color: #fff;
+    font-size: 18px; font-weight: 700; padding: 16px 28px; width: 100%; max-width: 320px; }
+  .hint { color: var(--hint); font-size: 14px; max-width: 320px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo">ПЕРШИЙ<br>КУСЬ</div>
+  <div id="status">Наведіть камеру на QR-код картки клієнта</div>
+  <button id="scan" type="button">📷 Сканувати</button>
+  <div class="hint">Відмітка нарахується одразу після сканування.</div>
+</main>
+<script>
+  // Сторінка відкривається кнопкою «Сканувати» в боті. Знайдений код картки йде боту через sendData.
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const statusEl = document.getElementById('status');
+  const CARD = /PK-[A-HJ-NP-Z2-9]{8}/;
+
+  function scan() {
+    if (!tg || !tg.showScanQrPopup || !tg.isVersionAtLeast('6.4')) {
+      statusEl.textContent = 'Сканер працює лише в Telegram на телефоні. Оновіть Telegram або надішліть код картки текстом.';
+      return;
+    }
+    tg.showScanQrPopup({ text: 'QR-код картки клієнта' }, function (text) {
+      const match = CARD.exec(String(text || '').toUpperCase());
+      if (!match) {
+        statusEl.textContent = 'Це не картка «Перший Кусь». Спробуйте ще раз.';
+        return false;             // сканер лишається відкритим
+      }
+      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      if (tg.closeScanQrPopup) tg.closeScanQrPopup();
+      tg.sendData(match[0]);      // бот отримає код, а вікно закриється
+      return true;
+    });
+  }
+
+  document.getElementById('scan').addEventListener('click', scan);
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    scan();
+  }
+</script>
+</body>
+</html>
